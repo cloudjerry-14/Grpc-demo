@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apk add --no-cache git
 
 # Copy the Go source code
-COPY *.go ./
+COPY main.go ./
 
 # Initialize the module (if go.mod doesn't exist)
 RUN go mod init myapp
