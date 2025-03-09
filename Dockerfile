@@ -1,17 +1,21 @@
-FROM golang:1.21 as builder
+FROM golang:1.16-alpine AS builder
 
 WORKDIR /app
-COPY . .
 
-# Download dependencies and build the application
-RUN go mod tidy && go build -o app
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
 
-# Create a minimal final image
-FROM gcr.io/distroless/base-debian10
+COPY *.go ./
+
+RUN go build -o /app/myapp
+
+FROM alpine:latest
 
 WORKDIR /app
-COPY --from=builder /app/app /app/
 
-EXPOSE 8080 50001
+COPY --from=builder /app/myapp /app/myapp
 
-CMD ["/app/app"]
+EXPOSE 8080 50051
+
+CMD ["/app/myapp"]
