@@ -8,44 +8,33 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc"
-	pb "your_project/helloworld" // Replace with your actual package
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-// gRPC Service Implementation
-type server struct {
-	pb.UnimplementedGreeterServer
-}
-
-func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	return &pb.HelloReply{Message: "Hello, " + in.Name}, nil
-}
-
-// HTTP handler
-func httpHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, World!")
-}
-
 func main() {
-	// Start HTTP Server
+	// Start HTTP server
 	go func() {
-		http.HandleFunc("/", httpHandler)
-		log.Println("Starting HTTP server on :8080")
-		if err := http.ListenAndServe(":8080", nil); err != nil {
-			log.Fatalf("Failed to start HTTP server: %v", err)
-		}
+		http.HandleFunc("/", handleHTTP)
+		http.HandleFunc("/health", handleHTTPHealth)
+		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
 
-	// Start gRPC Server
-	listener, err := net.Listen("tcp", ":50001")
+	// Start gRPC server
+	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		log.Fatalf("Failed to listen on port 50001: %v", err)
+		log.Fatalf("Failed to listen: %v", err)
 	}
+	s := grpc.NewServer()
+	grpc_health_v1.RegisterHealthServer(s, health.NewServer())
+	log.Fatal(s.Serve(lis))
+}
 
-	grpcServer := grpc.NewServer()
-	pb.RegisterGreeterServer(grpcServer, &server{})
+func handleHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello from HTTP!")
+}
 
-	log.Println("Starting gRPC server on :50001")
-	if err := grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Failed to serve gRPC: %v", err)
-	}
+func handleHTTPHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "OK")
 }
