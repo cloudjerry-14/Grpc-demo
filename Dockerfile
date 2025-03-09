@@ -8,8 +8,14 @@ COPY *.go ./
 # Initialize the module (if go.mod doesn't exist)
 RUN go mod init myapp
 
-# Add any external dependencies your code needs (if any)
-# RUN go get github.com/some/dependency
+# Add gRPC dependencies
+RUN go get google.golang.org/grpc
+RUN go get google.golang.org/grpc/health
+RUN go get google.golang.org/grpc/health/grpc_health_v1
+
+# Ensure dependencies are properly vendored
+RUN go mod tidy
+RUN go mod vendor
 
 # Build the application
 RUN go build -o /app/myapp
